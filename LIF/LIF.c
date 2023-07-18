@@ -4,7 +4,7 @@
 #define taum (R * C)
 
 // 考虑灭火期
-void lifPI(double *Vm, char *Spike, int numNeu, double *Ij, unsigned char *period)
+void lifPI(float *Vm, char *Spike, int numNeu, float *Ij, unsigned char *period)
 {
     for (int i = 0; i < numNeu; i++)
     {
@@ -32,7 +32,7 @@ void lifPI(double *Vm, char *Spike, int numNeu, double *Ij, unsigned char *perio
 }
 
 // 计算突触电流
-void IjDot(double *Weight, char *SpikeAll, int numNeu, int numProc, double *Ij)
+void IjDot(float *Weight, char *SpikeAll, int numNeu, int numProc, float *Ij)
 {
     int temp = numNeu * numProc;
     for (int i = 0; i < numNeu; i++)
