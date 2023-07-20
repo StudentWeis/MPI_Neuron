@@ -37,12 +37,12 @@ def process_Neuron(niter, numNeuron):
     VmR = np.ones(numNeuron, dtype=np.single) * (-70)
     Ij = np.ones(numNeuron, dtype=np.single) * (0.25)
     # 初始化突触
-    WeightMask = (np.random.choice(  # 兴奋型连接和抑制型连接
-        [-1, 1, 0], size=(numNeuron, numNeuron), p=[.2, .2, .6]) * (0.1)).astype(np.single)
-    WeightRand = (np.random.rand(numNeuron, numNeuron)).astype(np.single)
-    Weight = np.multiply(WeightMask, WeightRand)
+    # 兴奋型连接和抑制型连接
+    WeightMask = (np.random.choice([-1, 1, 0], size=(numNeuron, numNeuron), p=[.2, .2, .6])).astype(np.int8)
+    WeightRand = (np.random.rand(numNeuron, numNeuron) * 0.1).astype(np.single)
+    WeightRand = np.multiply(WeightMask, WeightRand).astype(np.single)
     # 释放内存占用
-    del WeightMask, WeightRand
+    del WeightMask
     # 初始化灭火期记录
     period = np.zeros(numNeuron, dtype=np.int8)
 
@@ -66,7 +66,7 @@ def process_Neuron(niter, numNeuron):
         # 初始化放电矩阵
         Spike = np.zeros(numNeuron, dtype='b')
         ctl_lib.lifPI(VmR, Spike, numNeuron, Ij, period)  # 大规模神经元电位计算
-        ctl_lib.IjDot(Weight, Spike, numNeuron, 1, Ij)  # 计算突触电流
+        ctl_lib.IjDot(WeightRand, Spike, numNeuron, 1, Ij)  # 计算突触电流
 
         # # 记录单个神经元的膜电位数据
         # if (i < numPlot):
@@ -97,6 +97,6 @@ def process_Neuron(niter, numNeuron):
 # 主程序
 if __name__ == '__main__':
     # 初始化仿真参数
-    numNeurons = 18000  # 最小集群神经元数量
+    numNeurons = 28000  # 最小集群神经元数量
     niters = 1000  # 迭代次数
     process_Neuron(niters, numNeurons)

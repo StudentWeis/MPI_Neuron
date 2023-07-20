@@ -41,14 +41,15 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
     MaskOKSend = False
     
     if comm_rank == 0:
-        import psutil
         import os
+
+        import psutil
         print(u'当前进程的内存使用：%.4f GB' % (psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024) )
     else:
         MaskOKRecv = comm.recv(source=comm_rank-1)
         
     # 初始化突触，兴奋型连接和抑制型连接
-    WeightMask = np.random.choice([-1, 1, 0], size=(numNeuron, totalNeuron), p=[.2, .2, .6])
+    WeightMask = np.random.choice([-1, 1, 0], size=(numNeuron, totalNeuron), p=[.2, .2, .6]).astype(np.int8)
     if comm_rank == 0:
         print(u'当前进程的内存使用：%.4f GB' % (psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024) )
     WeightRand = ((np.random.rand(numNeuron, totalNeuron)) * (0.1)).astype(np.single)
