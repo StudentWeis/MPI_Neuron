@@ -22,12 +22,22 @@ ctl_lib.IjDot.argtypes = [
     c_int, c_int, ctl.ndpointer(dtype=np.single)
 ]
 
+def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
 
-def process_Neuron(niter, numNeuron, totalNeuron):
+    # 同步，并计算各个进程神经元数量以及分布情况
+    count = np.zeros(comm_size, dtype=int)
+    temp = np.ones(1, dtype=int) * numNeuron
+    comm.Allgather(temp, count)
+    display = np.roll(count, 1)
+    display[0] = 0
+    display = display.cumsum()
+    print(count)
+    print(display)
 
     # 每个 MPI 进程初始化神经元
     VmR = np.ones(numNeuron, dtype=np.single) * (-70)
     Ij = np.ones(numNeuron, dtype=np.single) * (0.25)
+
     # 交错生成 Weight，缓解内存问题
     MaskOKRecv = False
     MaskOKSend = False
@@ -45,11 +55,9 @@ def process_Neuron(niter, numNeuron, totalNeuron):
     WeightRand = ((np.random.rand(numNeuron, totalNeuron)) * (0.1)).astype(np.single)
     if comm_rank == 0:
         print(u'当前进程的内存使用：%.4f GB' % (psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024) )
-    # WeightRand *= WeightMask
     WeightRand = np.multiply(WeightMask, WeightRand).astype(np.single)
     if comm_rank == 0:
         print(u'当前进程的内存使用：%.4f GB' % (psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024) )
-    # WeightRand[:] = np.multiply(WeightMask, WeightRand).astype(np.single)
     # 释放内存占用
     del WeightMask
     if comm_rank == 0:
@@ -60,6 +68,9 @@ def process_Neuron(niter, numNeuron, totalNeuron):
         comm.ssend(MaskOKSend, dest=comm_rank+1)
     if comm_rank == 0:
         MaskOKRecv = comm.recv(source=comm_size-1)
+        if(MaskOKRecv):
+            print("交错式初始化内存任务完毕")
+
     # 初始化灭火期记录
     period = np.zeros(numNeuron, dtype=np.int8)
 
@@ -74,6 +85,7 @@ def process_Neuron(niter, numNeuron, totalNeuron):
         # 打印发送辅助信息
         print("本程序为 LIF 神经元的 MPI 分布式仿真")
         print("Linux MPI 版本为")
+        print("交错式内存初始化+同步启动")
         print("灵活调节神经元个数")
         print("考虑神经元的灭火期")
         print("通过突触全随机连接计算电流")
@@ -95,8 +107,6 @@ def process_Neuron(niter, numNeuron, totalNeuron):
         Spike = np.zeros(numNeuron, dtype='b')
         SpikeAll = np.zeros(totalNeuron, dtype='b')
         ctl_lib.lifPI(VmR, Spike, numNeuron, Ij, period)  # 大规模神经元电位计算
-        count = [2000, 4500, 4500, 4500]
-        display = [0, 2000, 6500, 11000]
         if comm_rank == 0:
             start2 = time.time()  # 记录仿真时长
         comm.Allgatherv(Spike, [SpikeAll, count, display, MPI.BYTE])
@@ -116,6 +126,7 @@ def process_Neuron(niter, numNeuron, totalNeuron):
     if comm_rank == 0:
         print("运行时间为:", time.time() - start)
         print("收集时间为:", gathertime)
+
         # 绘制单个神经元的膜电位曲线验证仿真正确性
         x = np.linspace(0, numPlot, numPlot)
         figU, ax = plt.subplots()
@@ -133,13 +144,12 @@ def process_Neuron(niter, numNeuron, totalNeuron):
         figF.savefig("./output/LIF放电率.png")
 
 
-# 主程序
 if __name__ == '__main__':
     # 初始化仿真参数
     if comm_rank == 0:
-        numNeurons = 2000  # 最小集群神经元数量
+        numNeurons = 4500
     else:
         numNeurons = 4500
-    totalNeurons = 15500
+    totalNeurons = comm.allreduce(numNeurons)
     niters = 1000  # 迭代次数
     process_Neuron(niters, numNeurons, totalNeurons)
