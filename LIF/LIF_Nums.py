@@ -31,8 +31,6 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
     display = np.roll(count, 1)
     display[0] = 0
     display = display.cumsum()
-    print(count)
-    print(display)
 
     # 每个 MPI 进程初始化神经元
     VmR = np.ones(numNeuron, dtype=np.single) * (-70)
@@ -48,6 +46,7 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         print(u'当前进程的内存使用：%.4f GB' % (psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024) )
     else:
         MaskOKRecv = comm.recv(source=comm_rank-1)
+        
     # 初始化突触，兴奋型连接和抑制型连接
     WeightMask = np.random.choice([-1, 1, 0], size=(numNeuron, totalNeuron), p=[.2, .2, .6])
     if comm_rank == 0:
@@ -147,9 +146,9 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
 if __name__ == '__main__':
     # 初始化仿真参数
     if comm_rank == 0:
-        numNeurons = 4500
+        numNeurons = 7000
     else:
-        numNeurons = 4500
+        numNeurons = 7000
     totalNeurons = comm.allreduce(numNeurons)
     niters = 1000  # 迭代次数
     process_Neuron(niters, numNeurons, totalNeurons)
