@@ -28,12 +28,38 @@ def process_Neuron(niter, numNeuron, totalNeuron):
     # 每个 MPI 进程初始化神经元
     VmR = np.ones(numNeuron, dtype=np.single) * (-70)
     Ij = np.ones(numNeuron, dtype=np.single) * (0.25)
+    # 交错生成 Weight，缓解内存问题
+    MaskOKRecv = False
+    MaskOKSend = False
+    
+    if comm_rank == 0:
+        import psutil
+        import os
+        print(u'当前进程的内存使用：%.4f GB' % (psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024) )
+    else:
+        MaskOKRecv = comm.recv(source=comm_rank-1)
     # 初始化突触，兴奋型连接和抑制型连接
     WeightMask = np.random.choice([-1, 1, 0], size=(numNeuron, totalNeuron), p=[.2, .2, .6])
-    WeightRand = (np.random.rand(numNeuron, totalNeuron)) * (0.1)
-    Weight = np.multiply(WeightMask, WeightRand).astype(np.single)
+    if comm_rank == 0:
+        print(u'当前进程的内存使用：%.4f GB' % (psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024) )
+    WeightRand = ((np.random.rand(numNeuron, totalNeuron)) * (0.1)).astype(np.single)
+    if comm_rank == 0:
+        print(u'当前进程的内存使用：%.4f GB' % (psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024) )
+    # WeightRand *= WeightMask
+    WeightRand = np.multiply(WeightMask, WeightRand).astype(np.single)
+    if comm_rank == 0:
+        print(u'当前进程的内存使用：%.4f GB' % (psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024) )
+    # WeightRand[:] = np.multiply(WeightMask, WeightRand).astype(np.single)
     # 释放内存占用
-    del WeightMask, WeightRand
+    del WeightMask
+    if comm_rank == 0:
+        print(u'当前进程的内存使用：%.4f GB' % (psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024) )
+    if comm_rank == comm_size-1:
+        comm.ssend(MaskOKSend, dest=0)
+    else:
+        comm.ssend(MaskOKSend, dest=comm_rank+1)
+    if comm_rank == 0:
+        MaskOKRecv = comm.recv(source=comm_size-1)
     # 初始化灭火期记录
     period = np.zeros(numNeuron, dtype=np.int8)
 
@@ -74,16 +100,17 @@ def process_Neuron(niter, numNeuron, totalNeuron):
         if comm_rank == 0:
             start2 = time.time()  # 记录仿真时长
         comm.Allgatherv(Spike, [SpikeAll, count, display, MPI.BYTE])
+        # comm.Allgather(Spike, SpikeAll)
         if comm_rank == 0:
             gathertime += time.time() - start2
-        ctl_lib.IjDot(Weight, SpikeAll, numNeuron, totalNeuron, Ij)  # 计算突触电流
+        ctl_lib.IjDot(WeightRand, SpikeAll, numNeuron, totalNeuron, Ij)  # 计算突触电流
 
         # 记录单个神经元的膜电位数据
-        if comm_rank == 0:
-            if (i < numPlot):
-                picU[i] = VmR[90]
-                picS[i] = SpikeAll
-                picF[i] = sum(SpikeAll)
+        # if comm_rank == 0:
+        #     if (i < numPlot):
+        #         picU[i] = VmR[90]
+        #         picS[i] = SpikeAll
+        #         picF[i] = sum(SpikeAll)
 
     # 主进程发送辅助信息
     if comm_rank == 0:

@@ -68,11 +68,11 @@ def process_Neuron(niter, numNeuron):
         ctl_lib.lifPI(VmR, Spike, numNeuron, Ij, period)  # 大规模神经元电位计算
         ctl_lib.IjDot(Weight, Spike, numNeuron, 1, Ij)  # 计算突触电流
 
-        # 记录单个神经元的膜电位数据
-        if (i < numPlot):
-            picU[i] = VmR[90]
-            picS[i] = Spike
-            picF[i] = sum(Spike)
+        # # 记录单个神经元的膜电位数据
+        # if (i < numPlot):
+        #     picU[i] = VmR[90]
+        #     picS[i] = Spike
+        #     picF[i] = sum(Spike)
 
     print("运行时间为:", time.time() - start)
     print(u'当前进程的内存使用：%.4f GB' % (psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024) )
@@ -97,6 +97,6 @@ def process_Neuron(niter, numNeuron):
 # 主程序
 if __name__ == '__main__':
     # 初始化仿真参数
-    numNeurons = 10000  # 最小集群神经元数量
+    numNeurons = 18000  # 最小集群神经元数量
     niters = 1000  # 迭代次数
     process_Neuron(niters, numNeurons)
