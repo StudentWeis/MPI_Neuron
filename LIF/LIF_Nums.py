@@ -49,7 +49,7 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         MaskOKRecv = comm.recv(source=comm_rank-1)
         
     # 初始化突触，兴奋型连接和抑制型连接
-    WeightMask = np.random.choice([-1, 1, 0], size=(numNeuron, totalNeuron), p=[.2, .1, .7]).astype(np.int8)
+    WeightMask = np.random.choice([-1, 1, 0], size=(numNeuron, totalNeuron), p=[.2, .2, .6]).astype(np.int8)
     if comm_rank == 0:
         print(u'当前进程的内存使用：%.4f GB' % (psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024) )
     WeightRand = ((np.random.rand(numNeuron, totalNeuron)) * (0.1)).astype(np.single)
@@ -116,11 +116,11 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         ctl_lib.IjDot(WeightRand, SpikeAll, numNeuron, totalNeuron, Ij)  # 计算突触电流
 
         # 记录单个神经元的膜电位数据
-        # if comm_rank == 0:
-        #     if (i < numPlot):
-        #         picU[i] = VmR[90]
-        #         picS[i] = SpikeAll
-        #         picF[i] = sum(SpikeAll)
+        if comm_rank == 0:
+            if (i < numPlot):
+                picU[i] = VmR[90]
+                picS[i] = SpikeAll
+                picF[i] = sum(SpikeAll)
 
     # 主进程发送辅助信息
     if comm_rank == 0:
@@ -147,9 +147,9 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
 if __name__ == '__main__':
     # 初始化仿真参数
     if comm_rank == 0:
-        numNeurons = 10000
+        numNeurons = 625
     else:
-        numNeurons = 10000
+        numNeurons = 625
     totalNeurons = comm.allreduce(numNeurons)
     niters = 1000  # 迭代次数
     process_Neuron(niters, numNeurons, totalNeurons)
