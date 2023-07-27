@@ -116,11 +116,11 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         ctl_lib.IjDot(WeightRand, SpikeAll, numNeuron, totalNeuron, Ij)  # 计算突触电流
 
         # 记录单个神经元的膜电位数据
-        if comm_rank == 0:
-            if (i < numPlot):
-                picU[i] = VmR[90]
-                picS[i] = SpikeAll
-                picF[i] = sum(SpikeAll)
+        # if comm_rank == 0:
+        #     if (i < numPlot):
+        #         picU[i] = VmR[90]
+        #         picS[i] = SpikeAll
+        #         picF[i] = sum(SpikeAll)
 
     # 主进程发送辅助信息
     if comm_rank == 0:
@@ -147,9 +147,9 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
 if __name__ == '__main__':
     # 初始化仿真参数
     if comm_rank == 0:
-        numNeurons = 625
+        numNeurons = 7500
     else:
-        numNeurons = 625
+        numNeurons = 7500
     totalNeurons = comm.allreduce(numNeurons)
     niters = 1000  # 迭代次数
     process_Neuron(niters, numNeurons, totalNeurons)
