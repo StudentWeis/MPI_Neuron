@@ -1,12 +1,3 @@
-# 本程序为 LIF 神经元的 NoMPI 仿真
-# 考虑神经元的灭火期
-# 通过突触全随机连接计算电流
-# 使用 C 动态库进行加速计算
-# 使用 Matplotlib 绘图
-# 神经元数量为： 10000
-# 迭代次数为： 1000
-# 运行时间为: 0.19208598136901855
-
 import os
 import time
 from ctypes import c_int
