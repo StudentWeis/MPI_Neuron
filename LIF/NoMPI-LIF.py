@@ -97,6 +97,6 @@ def process_Neuron(niter, numNeuron):
 # 主程序
 if __name__ == '__main__':
     # 初始化仿真参数
-    numNeurons = 10000  # 最小集群神经元数量
+    numNeurons = 20000  # 最小集群神经元数量
     niters = 1000  # 迭代次数
     process_Neuron(niters, numNeurons)

@@ -11,6 +11,7 @@ conda activate mpineuron
 export DISPLAY=:0
 gcc -fPIC -shared LIF/LIF.c -o LIF/LIF.so -O3
 mpiexec -n 16 python LIF/LIF_Nums.py
+python LIF/NoMPI-LIF.py 
 
 # HH
 export DISPLAY=:0
