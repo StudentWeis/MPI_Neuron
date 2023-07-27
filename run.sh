@@ -1,12 +1,16 @@
-cd ~/MPI_Neuron
+# 虚拟环境初始化
+conda create -n mpineuron python=3.10
+conda install gcc_linux-64
+pip install numpy matplotlib psutil mpi4py
 
-# 虚拟环境
+# 使用
+cd ~/MPI_Neuron
 conda activate mpineuron
-pip install numpy matplotlib psutil
 
 # LIF
+export DISPLAY=:0
 gcc -fPIC -shared LIF/LIF.c -o LIF/LIF.so -O3
-mpiexec -n 4 python LIF/LIF_Nums.py
+mpiexec -n 16 python LIF/LIF_Nums.py
 
 # HH
 export DISPLAY=:0
