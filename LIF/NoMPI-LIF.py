@@ -38,7 +38,7 @@ def process_Neuron(niter, numNeuron):
     Ij = np.ones(numNeuron, dtype=np.single) * (0.25)
     # 初始化突触
     # 兴奋型连接和抑制型连接
-    WeightMask = (np.random.choice([-1, 1, 0], size=(numNeuron, numNeuron), p=[.2, .2, .6])).astype(np.int8)
+    WeightMask = (np.random.choice([-1, 1, 0], size=(numNeuron, numNeuron), p=[.1, .2, .7])).astype(np.int8)
     WeightRand = (np.random.rand(numNeuron, numNeuron) * 0.1).astype(np.single)
     WeightRand = np.multiply(WeightMask, WeightRand).astype(np.single)
     # 释放内存占用
