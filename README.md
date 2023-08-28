@@ -25,3 +25,7 @@ python LIF/NoMPI-LIF.py
 export DISPLAY=:0
 g++ -fPIC -shared HH/HH.cpp -o HH/HH.so -O3
 mpiexec --allow-run-as-root -n 6 python HH/HH.py
+
+# Izhikevich
+export DISPLAY=:0
+mpiexec -n 4 python Izhikevich/Izhikevich.py

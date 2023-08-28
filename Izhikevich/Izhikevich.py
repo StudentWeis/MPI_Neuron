@@ -23,33 +23,17 @@ ctl_lib.IRungeKutta.argtypes = [
     c_double, c_double
 ]
 
-
-a = 0.05  # 恢复变量的时间尺度，越小，恢复越慢
-b = 0.2  # 恢复变量依赖膜电位的阈值下随机波动的敏感度
-c = -50.0  # 膜电位复位值
-d = 5  # 恢复变量复位值
-
-
-def main():
-    v = -65  # 初始膜电位
-    u = -0  # 初始恢复量
+def main(numNeuron):
+    a = 0.05  # 恢复变量的时间尺度，越小，恢复越慢
+    b = 0.2  # 恢复变量依赖膜电位的阈值下随机波动的敏感度
+    c = -70.0  # 膜电位复位值
+    d = 5  # 恢复变量复位值
+    VmR = np.ones(numNeuron, dtype=np.single) * (-70)
+    u = np.ones(numNeuron, dtype=np.single) * (0)
+    Ij = np.ones(numNeuron, dtype=np.single) * (5)
     t = 0.1  # 时间步长
-    Ij = 5  # 输入电流
-    vs = []  # 记录v
-    us = []  # 记录u
-    time = []  # 时间戳
     for i in np.arange(0, 1000, t):  # 模拟时长(ms)
-        time.append(i)
-        ctl_lib.IRungeKutta(v, u, Ij, a, b, c, d)
-        if v >= 30:  # 发射脉冲
-            vs.append(30)
-            v = c
-            u = u+d
-        else:
-            vs.append(v)
-        us.append(u)
-    plt.plot(time, vs)
-    plt.savefig("test.png")
+        ctl_lib.IRungeKutta(VmR, u, Ij, a, b, c, d)
 
 
 main()
