@@ -19,17 +19,15 @@ ctl_lib.rungeKutta.argtypes = [
     ctl.ndpointer(dtype=np.single), 
     ctl.ndpointer(dtype=np.single),
     ctl.ndpointer(dtype=np.single),
-    c_float, c_float, c_float, c_float, c_int
+    ctl.ndpointer(dtype='b'), c_float,
+    c_float, c_float, c_float, c_int
 ]
 
-def process_Neuron(niter: int, numNeuron: int):
-    # a = 0.05  # 恢复变量的时间尺度，越小，恢复越慢
-    # b = 0.2  # 恢复变量依赖膜电位的阈值下随机波动的敏感度
-    # c = -50.0  # 膜电位复位值
-    # d = 5  # 恢复变量复位值
-
+def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
     # 抑制型
-    a = 0.02; b = 0.2; c = -65.0; d = 6  
+    # a = 0.02; b = 0.2; c = -65.0; d = 6  
+    # 兴奋型
+    a = 0.2; b = 0.26; c = -65.0; d = 0
     Vm = np.ones(numNeuron, dtype=np.single) * (-55)
     u = np.ones(numNeuron, dtype=np.single) * (-0)
     Ij = np.ones(numNeuron, dtype=np.single) * (5)
@@ -41,7 +39,7 @@ def process_Neuron(niter: int, numNeuron: int):
         import matplotlib
         import matplotlib.pyplot as plt
         matplotlib.use('Agg')
-        numPlot = 2000
+        numPlot = 1000
         # 打印发送辅助信息
         print("本程序为 Izhikevich 神经元的 MPI 分布式仿真")
         print("Linux MPI 版本为")
@@ -51,23 +49,43 @@ def process_Neuron(niter: int, numNeuron: int):
         print("迭代次数为：", niter)
         # 绘图数组
         picU = np.ones(numPlot, dtype=np.single)
+        picS = np.zeros((numPlot, totalNeuron), dtype=bool)
+        picF = np.zeros(numPlot, dtype=np.int32)
+        start = time.time()  # 记录仿真时长
 
     for i in range(niter):
+        Spike = np.zeros(numNeuron, dtype='b')
+        SpikeAll = np.zeros(totalNeuron, dtype='b')
         ctl_lib.rungeKutta(Vm, u, Ij, a, b, c, d, numNeuron)
+        comm.Allgather(Spike, SpikeAll)
         # 记录单个神经元的膜电位数据
         if comm_rank == 0:
             if (i < numPlot):
                 picU[i] = Vm[5]
+                picS[i] = SpikeAll
+                picF[i] = sum(SpikeAll)
     
         # 主进程发送辅助信息
     if comm_rank == 0:
+        print("运行时间为:", time.time() - start)
+
         # 绘制单个神经元的膜电位曲线验证仿真正确性
         x = np.linspace(0, numPlot, numPlot)
         figU, ax = plt.subplots()
         ax.plot(x, picU)
-        figU.savefig("Izhikevich 膜电位.png")
+        figU.savefig(os.path.join(father_path, "Izhikevich 膜电位.png"))
+        figS, ay = plt.subplots()
+        for i in range(numPlot):
+            y = np.argwhere(picS[i] == 1)
+            x = np.ones(len(y)) * i
+            ay.scatter(x, y, c='black', s=0.5)
+        figS.savefig(os.path.join(father_path, "Izhikevich 放电栅格.png"))
+        figF, af = plt.subplots()
+        x = np.linspace(0, numPlot, numPlot)
+        af.plot(x, picF)
+        figF.savefig(os.path.join(father_path, "Izhikevich 放电率.png"))
 
 if __name__ == '__main__':
     # 初始化仿真参数
     niters = 10000  # 迭代次数
-    process_Neuron(niters, 10)
+    process_Neuron(niters, 1000)

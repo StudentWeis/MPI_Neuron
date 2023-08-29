@@ -5,7 +5,7 @@ void izhikevich(float Vmi, float ui, float Iji, float a, float b, float *vt, flo
 }
 
 float v1, u1, v2, u2, v3, u3, v4, u4;
-void rungeKutta(float *Vm, float *u, float *Ij, float a, float b, float c, float d, int numNeu)
+void rungeKutta(float *Vm, float *u, float *Ij, char *Spike, float a, float b, float c, float d, int numNeu)
 {
     for (int i = 0; i < numNeu; i++)
     {
@@ -19,6 +19,7 @@ void rungeKutta(float *Vm, float *u, float *Ij, float a, float b, float c, float
         {
             Vm[i] = c;
             u[i] += d;
+            Spike[i] = 1;
         }
     }
 }

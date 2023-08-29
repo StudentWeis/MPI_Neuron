@@ -108,7 +108,7 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         SpikeAll = np.zeros(totalNeuron, dtype='b')
         ctl_lib.lifPI(VmR, Spike, numNeuron, Ij, period)  # 大规模神经元电位计算
         if comm_rank == 0:
-            start2 = time.time()  # 记录仿真时长
+            start2 = time.time()  # 收集仿真时长
         # comm.Allgatherv(Spike, [SpikeAll, count, display, MPI.BYTE])
         comm.Allgather(Spike, SpikeAll)
         if comm_rank == 0:
