@@ -31,10 +31,11 @@ def main(niter, numNeuron):
     b = 0.2  # 恢复变量依赖膜电位的阈值下随机波动的敏感度
     c = -50.0  # 膜电位复位值
     d = 5  # 恢复变量复位值
-    Vm = np.ones(numNeuron, dtype=np.single) * (-50)
-    u = np.ones(numNeuron, dtype=np.single) * (0)
+    Vm = np.ones(numNeuron, dtype=np.single) * (-65)
+    u = np.ones(numNeuron, dtype=np.single) * (-0)
     Ij = np.ones(numNeuron, dtype=np.single) * (5)
     for i in range(niter):  # 模拟时长(ms)
+
         ctl_lib.rungeKutta(Vm, u, Ij, a, b, c, d, numNeuron)
 
 

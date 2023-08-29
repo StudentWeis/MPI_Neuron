@@ -28,7 +28,7 @@ def rungeKutta(v, u, t, I):  # runge-kutta求解
 def main():
     v = -65  # 初始膜电位
     u = -0  # 初始恢复量
-    t = 0.1  # 时间步长
+    t = 1  # 时间步长
     I = 5  # 输入电流
     vs = []  # 记录v
     us = []  # 记录u
