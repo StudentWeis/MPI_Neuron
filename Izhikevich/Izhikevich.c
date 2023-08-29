@@ -3,6 +3,7 @@ void izhikevich(float Vmi, float ui, float Iji, float a, float b, float *vt, flo
     vt[0] = 0.04 * Vmi * Vmi + 5 * Vmi + 140 - ui + Iji;
     ut[0] = a * (b * Vmi - ui);
 }
+
 float v1, u1, v2, u2, v3, u3, v4, u4;
 void rungeKutta(float *Vm, float *u, float *Ij, float a, float b, float c, float d, int numNeu)
 {

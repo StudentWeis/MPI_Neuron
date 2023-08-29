@@ -28,10 +28,8 @@ def process_Neuron(niter: int, numNeuron: int):
     # c = -50.0  # 膜电位复位值
     # d = 5  # 恢复变量复位值
 
-    a = 0.02  # 恢复变量的时间尺度，越小，恢复越慢
-    b = 0.2  # 恢复变量依赖膜电位的阈值下随机波动的敏感度
-    c = -50.0  # 膜电位复位值
-    d = 2  # 恢复变量复位值
+    # 抑制型
+    a = 0.02; b = 0.2; c = -65.0; d = 6  
     Vm = np.ones(numNeuron, dtype=np.single) * (-55)
     u = np.ones(numNeuron, dtype=np.single) * (-0)
     Ij = np.ones(numNeuron, dtype=np.single) * (5)
@@ -43,7 +41,7 @@ def process_Neuron(niter: int, numNeuron: int):
         import matplotlib
         import matplotlib.pyplot as plt
         matplotlib.use('Agg')
-        numPlot = 10000
+        numPlot = 2000
         # 打印发送辅助信息
         print("本程序为 Izhikevich 神经元的 MPI 分布式仿真")
         print("Linux MPI 版本为")
