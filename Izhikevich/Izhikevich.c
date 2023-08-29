@@ -1,26 +1,28 @@
-#define dt 0.1
-
-void izhikevich(float *Vm, float *u, float *Ij, float a, float b, int numNeu)
+void izhikevich(float Vmi, float ui, float Iji, float a, float b, int numNeu, float *vt, float *ut)
 {
     for (int i = 0; i < numNeu; i++)
     {
-            Vm[i] = 0.04 * Vm[i] * Vm[i] + 5 * Vm[i] + 140 - u[i] + Ij[i];
-            u[i] = a * (b * Vm[i] - u[i]);
+        *vt = 0.04 * Vmi * Vmi + 5 * Vmi + 140 - ui + Iji;
+        *ut = a * (b * Vmi - ui);
     }
 }
 
-void rungeKutta(double *v, double *u, double Ij, double a, double b, double c, double d)
+void rungeKutta(float *Vm, float *u, float *Ij, float a, float b, float c, float d, int numNeu)
 {
-    double v1, u1, v2, u2, v3, u3, v4, u4;
-    izhikevich(*v, *u, Ij, a, b, &v1, &u1);
-    izhikevich(*v + 0.5 * dt * v1, *u + 0.5 * dt * u1, Ij, a, b, &v2, &u2);
-    izhikevich(*v + 0.5 * dt * v2, *u + 0.5 * dt * u2, Ij, a, b, &v3, &u3);
-    izhikevich(*v + dt * v3, *u + dt * u3, Ij, a, b, &v4, &u4);
-    *v = *v + 1 / 6 * dt * v1 + 1 / 3 * dt * v2 + 1 / 3 * dt * v3 + 1 / 6 * dt * v4;
-    *u = *u + 1 / 6 * dt * u1 + 1 / 3 * dt * u2 + 1 / 3 * dt * u3 + 1 / 6 * dt * u4;
-    if (v >= 30)
+    for (int i = 0; i < numNeu; i++)
     {
-        v = c;
-        u = u + d;
+        float v1, u1, v2, u2, v3, u3, v4, u4;
+        izhikevich(Vm[i], u[i], Ij[i], a, b, numNeu, &v1, &u1);
+        izhikevich(Vm[i] + 0.5 * v1, *u + 0.5 * u1, Ij[i], a, b, numNeu, &v2, &u2);
+        izhikevich(Vm[i] + 0.5 * v2, *u + 0.5 * u2, Ij[i], a, b, numNeu, &v3, &u3);
+        izhikevich(Vm[i] + v3, *u + u3, Ij[i], a, b, numNeu, &v4, &u4);
+
+        Vm[i] = Vm[i] + (1 / 6) * v1 + (1 / 3) * v2 + (1 / 3) * v3 + (1 / 6) * v4;
+        u[i] = u[i] + (1 / 6) * u1 + (1 / 3) * u2 + (1 / 3) * u3 + (1 / 6) * u4;
+        // if (Vm[i] >= 30)
+        // {
+        //     Vm[i] = c;
+        //     u[i] = u[i] + d;
+        // }
     }
 }

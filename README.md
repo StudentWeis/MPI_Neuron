@@ -28,4 +28,5 @@ mpiexec --allow-run-as-root -n 6 python HH/HH.py
 
 # Izhikevich
 export DISPLAY=:0
+gcc -fPIC -shared Izhikevich/Izhikevich.c -o Izhikevich/Izhikevich.so -O3
 mpiexec -n 4 python Izhikevich/Izhikevich.py
