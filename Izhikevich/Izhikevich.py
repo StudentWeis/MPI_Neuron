@@ -30,7 +30,6 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
     a = 0.2; b = 0.26; c = -65.0; d = 0
     Vm = np.ones(numNeuron, dtype=np.single) * (-55)
     u = np.ones(numNeuron, dtype=np.single) * (-0)
-    #  = np.ones(numNeuron, dtype=np.single) * (5)
     Ij = ((np.random.rand(numNeuron, totalNeuron)) * (5)).astype(np.single)
 
     # 主进程
@@ -73,21 +72,27 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
 
         # 绘制单个神经元的膜电位曲线验证仿真正确性
         x = np.linspace(0, numPlot, numPlot)
-        figU, ax = plt.subplots()
+        ax = plt.subplot(1,3,1)
         ax.plot(x, picU)
-        figU.savefig(os.path.join(father_path, "Izhikevich 膜电位.png"))
-        figS, ay = plt.subplots()
+        # fig.savefig(os.path.join(father_path, "Izhikevich 膜电位.png"))
+        ay = plt.subplot(1,3,2)
         for i in range(numPlot):
             y = np.argwhere(picS[i] == 1)
             x = np.ones(len(y)) * i
             ay.scatter(x, y, c='black', s=0.5)
-        figS.savefig(os.path.join(father_path, "Izhikevich 放电栅格.png"))
-        figF, af = plt.subplots()
+        # fig.savefig(os.path.join(father_path, "Izhikevich 放电栅格.png"))
+        af = plt.subplot(1,3,3)
         x = np.linspace(0, numPlot, numPlot)
         af.plot(x, picF)
-        figF.savefig(os.path.join(father_path, "Izhikevich 放电率.png"))
+        fig.savefig(os.path.join(father_path, "Izhikevich 放电率.png"))
 
 if __name__ == '__main__':
     # 初始化仿真参数
+    if comm_rank == 0:
+        numNeurons = 500
+    else:
+        numNeurons = 500
+        
+    totalNeurons = comm.allreduce(numNeurons)
     niters = 1000  # 迭代次数
-    process_Neuron(niters, 100, 400)
+    process_Neuron(niters, numNeurons, totalNeurons)
