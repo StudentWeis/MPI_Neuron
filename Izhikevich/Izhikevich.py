@@ -30,7 +30,8 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
     a = 0.2; b = 0.26; c = -65.0; d = 0
     Vm = np.ones(numNeuron, dtype=np.single) * (-55)
     u = np.ones(numNeuron, dtype=np.single) * (-0)
-    Ij = np.ones(numNeuron, dtype=np.single) * (5)
+    #  = np.ones(numNeuron, dtype=np.single) * (5)
+    Ij = ((np.random.rand(numNeuron, totalNeuron)) * (5)).astype(np.single)
 
     # 主进程
     if comm_rank == 0:
@@ -54,9 +55,10 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         start = time.time()  # 记录仿真时长
 
     for i in range(niter):
+        Ij = ((np.random.rand(numNeuron, totalNeuron)) * (5)).astype(np.single)
         Spike = np.zeros(numNeuron, dtype='b')
         SpikeAll = np.zeros(totalNeuron, dtype='b')
-        ctl_lib.rungeKutta(Vm, u, Ij, a, b, c, d, numNeuron)
+        ctl_lib.rungeKutta(Vm, u, Ij, Spike, a, b, c, d, numNeuron)
         comm.Allgather(Spike, SpikeAll)
         # 记录单个神经元的膜电位数据
         if comm_rank == 0:
@@ -87,5 +89,5 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
 
 if __name__ == '__main__':
     # 初始化仿真参数
-    niters = 10000  # 迭代次数
-    process_Neuron(niters, 1000)
+    niters = 1000  # 迭代次数
+    process_Neuron(niters, 100, 400)
