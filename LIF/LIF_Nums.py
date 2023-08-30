@@ -1,3 +1,4 @@
+import os
 from ctypes import c_int
 
 import numpy as np
@@ -10,6 +11,8 @@ comm_rank = comm.Get_rank()
 comm_size = comm.Get_size()
 
 # 初始化 C 动态库函数
+current_path = os.path.abspath(__file__)
+father_path = os.path.abspath(os.path.dirname(current_path) + os.path.sep + ".")
 ctl_lib = ctl.load_library("LIF_Nums.so", "./LIF")
 ctl_lib.lifPI.restypes = None
 ctl_lib.lifPI.argtypes = [
@@ -78,10 +81,7 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
     if comm_rank == 0:
         import time
 
-        import matplotlib
-        import matplotlib.pyplot as plt
-        matplotlib.use('Agg')
-        numPlot = 100
+        numPlot = 200
         # 打印发送辅助信息
         print("本程序为 LIF 神经元的 MPI 分布式仿真")
         print("Linux MPI 版本为")
@@ -95,9 +95,9 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         print("集群个数为：", comm_size)
         print("迭代次数为：", niter)
         # 绘图数组
-        picU = np.ones(numPlot, dtype=np.single)
-        picS = np.zeros((numPlot, totalNeuron), dtype=bool)
-        picF = np.zeros(numPlot, dtype=np.int32)
+        picV = np.ones(numPlot, dtype=np.single)
+        picY = np.zeros((numPlot, totalNeuron), dtype=bool)
+        picF = np.zeros(numPlot, dtype=np.single)
         start = time.time()  # 记录仿真时长
         gathertime = 0
 
@@ -116,40 +116,59 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         ctl_lib.IjDot(WeightRand, SpikeAll, numNeuron, totalNeuron, Ij)  # 计算突触电流
 
         # 记录单个神经元的膜电位数据
-        # if comm_rank == 0:
-        #     if (i < numPlot):
-        #         picU[i] = VmR[90]
-        #         picS[i] = SpikeAll
-        #         picF[i] = sum(SpikeAll)
+        if comm_rank == 0:
+            if (i < numPlot):
+                picV[i] = VmR[90]
+                picY[i] = SpikeAll
+                picF[i] = sum(SpikeAll)/totalNeuron
 
     # 主进程发送辅助信息
     if comm_rank == 0:
         print("运行时间为:", time.time() - start)
         print("收集时间为:", gathertime)
 
-        # 绘制单个神经元的膜电位曲线验证仿真正确性
+        # 绘制单个神经元实验结果验证仿真正确性
+        import matplotlib
+        import matplotlib.pyplot as plt
+        matplotlib.use('Agg')
+        plt.style.use('bmh')
+
+        # LIF Simulation results
+        fig = plt.figure(dpi=300)
         x = np.linspace(0, numPlot, numPlot)
-        figU, ax = plt.subplots()
-        ax.plot(x, picU)
-        figU.savefig("./output/LIF膜电位.png")
-        figS, ay = plt.subplots()
+        # 膜电位
+        av = plt.subplot(3,1,1)
+        av.plot(x, picV)
+        av.axes.xaxis.set_ticklabels([])
+        av.set_title("(a1)", x=0.05, y=0.8, size=10) # Membrane Potential
+        av.set_ylabel("Voltage/mV")
+        av.set_xlim(50,150)
+        # 放电率
+        af = plt.subplot(3,1,2)
+        af.plot(x, picF)
+        af.axes.xaxis.set_ticklabels([])
+        af.set_title("(a2)", x=0.05, y=0.8, size=10) # Firing Rate
+        af.set_ylabel("Firing Rate/%", labelpad=11)
+        af.set_xlim(50,150)
+        # 放电栅格
+        ay = plt.subplot(3,1,3)
         for i in range(numPlot):
-            y = np.argwhere(picS[i] == 1)
+            y = np.argwhere(picY[i] == 1)
             x = np.ones(len(y)) * i
             ay.scatter(x, y, c='black', s=0.5)
-        figS.savefig("./output/LIF放电栅格图.png")
-        figF, af = plt.subplots()
-        x = np.linspace(0, numPlot, numPlot)
-        af.plot(x, picF)
-        figF.savefig("./output/LIF放电率.png")
+        ay.set_title("(a3)", x=0.05, y=0.8, size=10) # Firing Grid Map
+        ay.set_ylabel("Neuron No.")
+        ay.set_xlim(50,150)
+        # 保存图片
+        fig.savefig(os.path.join(father_path, "LIF.png"))
 
 
 if __name__ == '__main__':
     # 初始化仿真参数
     if comm_rank == 0:
-        numNeurons = 7500
+        numNeurons = 500
     else:
-        numNeurons = 7500
+        numNeurons = 500
     totalNeurons = comm.allreduce(numNeurons)
     niters = 1000  # 迭代次数
     process_Neuron(niters, numNeurons, totalNeurons)
