@@ -81,24 +81,15 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         av = plt.subplot(3,1,1)
         av.plot(x, picV)
         av.axes.xaxis.set_ticklabels([])
-<<<<<<< HEAD
-        av.set_title("(a1)", x=1.05, y=0.8, size=10) # Membrane Potential
-=======
         av.set_title("(b1)", x=1.05, y=0.8, size=10) # Membrane Potential
->>>>>>> refs/remotes/github/main
         av.set_ylabel("Voltage/(mV)")
         av.set_xlim(100,500)
         # 放电率
         af = plt.subplot(3,1,2)
         af.plot(x, picF)
         af.axes.xaxis.set_ticklabels([])
-<<<<<<< HEAD
-        af.set_title("(a2)", x=1.05, y=0.8, size=10) # Firing Rate
-        af.set_ylabel("Firing Rate/(%)", labelpad=12)
-=======
         af.set_title("(b2)", x=1.05, y=0.8, size=10) # Firing Rate
         af.set_ylabel("Firing Rate/(%)", labelpad=13.5)
->>>>>>> refs/remotes/github/main
         af.set_xlim(100,500)
         # 放电栅格
         ay = plt.subplot(3,1,3)
@@ -106,11 +97,7 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
             y = np.argwhere(picY[i] == 1)
             x = np.ones(len(y)) * i
             ay.scatter(x, y, c='black', s=0.5)
-<<<<<<< HEAD
-        ay.set_title("(a3)", x=1.05, y=0.8, size=10) # Firing Grid Map
-=======
         ay.set_title("(b3)", x=1.05, y=0.8, size=10) # Firing Grid Map
->>>>>>> refs/remotes/github/main
         ay.set_ylabel("Neuron No.")
         ay.set_xlim(100,500)
         # 保存图片
