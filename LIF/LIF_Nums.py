@@ -106,6 +106,7 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         # 初始化放电矩阵
         Spike = np.zeros(numNeuron, dtype='b')
         SpikeAll = np.zeros(totalNeuron, dtype='b')
+        Ij = ((np.random.rand(numNeuron, totalNeuron)) * (0.25)).astype(np.single)
         ctl_lib.lifPI(VmR, Spike, numNeuron, Ij, period)  # 大规模神经元电位计算
         if comm_rank == 0:
             start2 = time.time()  # 收集仿真时长
@@ -113,14 +114,14 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         comm.Allgather(Spike, SpikeAll)
         if comm_rank == 0:
             gathertime += time.time() - start2
-        ctl_lib.IjDot(WeightRand, SpikeAll, numNeuron, totalNeuron, Ij)  # 计算突触电流
+        # ctl_lib.IjDot(WeightRand, SpikeAll, numNeuron, totalNeuron, Ij)  # 计算突触电流
 
         # 记录单个神经元的膜电位数据
         if comm_rank == 0:
             if (i < numPlot):
                 picV[i] = VmR[90]
                 picY[i] = SpikeAll
-                picF[i] = sum(SpikeAll)/totalNeuron
+                picF[i] = sum(SpikeAll)/totalNeuron*100
 
     # 主进程发送辅助信息
     if comm_rank == 0:
@@ -140,15 +141,14 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         av = plt.subplot(3,1,1)
         av.plot(x, picV)
         av.axes.xaxis.set_ticklabels([])
-        av.set_title("(a1)", x=0.05, y=0.8, size=10) # Membrane Potential
+        av.set_title("(b1)", x=1.05, y=0.8, size=10) # Membrane Potential
         av.set_ylabel("Voltage/mV")
         av.set_xlim(50,150)
         # 放电率
         af = plt.subplot(3,1,2)
         af.plot(x, picF)
-        af.axes.xaxis.set_ticklabels([])
-        af.set_title("(a2)", x=0.05, y=0.8, size=10) # Firing Rate
-        af.set_ylabel("Firing Rate/%", labelpad=11)
+        af.set_title("(b2)", x=1.05, y=0.8, size=10) # Firing Rate
+        af.set_ylabel("Firing Rate/(%)", labelpad=12)
         af.set_xlim(50,150)
         # 放电栅格
         ay = plt.subplot(3,1,3)
@@ -156,7 +156,7 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
             y = np.argwhere(picY[i] == 1)
             x = np.ones(len(y)) * i
             ay.scatter(x, y, c='black', s=0.5)
-        ay.set_title("(a3)", x=0.05, y=0.8, size=10) # Firing Grid Map
+        ay.set_title("(b3)", x=1.05, y=0.8, size=10) # Firing Grid Map
         ay.set_ylabel("Neuron No.")
         ay.set_xlim(50,150)
         # 保存图片
@@ -166,9 +166,9 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
 if __name__ == '__main__':
     # 初始化仿真参数
     if comm_rank == 0:
-        numNeurons = 500
+        numNeurons = 100
     else:
-        numNeurons = 500
+        numNeurons = 100
     totalNeurons = comm.allreduce(numNeurons)
     niters = 1000  # 迭代次数
     process_Neuron(niters, numNeurons, totalNeurons)
