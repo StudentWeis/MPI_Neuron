@@ -35,7 +35,13 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
     # 主进程
     if comm_rank == 0:
         import time
+
+        # 绘图数组
         numPlot = 500
+        picV = np.ones(numPlot, dtype=np.single)
+        picY = np.zeros((numPlot, totalNeuron), dtype=bool)
+        picF = np.zeros(numPlot, dtype=np.single)
+        
         # 打印发送辅助信息
         print("本程序为 Izhikevich 神经元的 MPI 分布式仿真")
         print("Linux MPI 版本为")
@@ -43,10 +49,6 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         print("使用 Matplotlib 绘图")
         print("神经元数量为：", numNeuron)
         print("迭代次数为：", niter)
-        # 绘图数组
-        picV = np.ones(numPlot, dtype=np.single)
-        picY = np.zeros((numPlot, totalNeuron), dtype=bool)
-        picF = np.zeros(numPlot, dtype=np.single)
         start = time.time()  # 记录仿真时长
 
     for i in range(niter):
@@ -60,7 +62,7 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
             if (i < numPlot):
                 picV[i] = Vm[5]
                 picY[i] = SpikeAll
-                picF[i] = sum(SpikeAll)/totalNeuron
+                picF[i] = sum(SpikeAll)/totalNeuron*100
     
         # 主进程发送辅助信息
     if comm_rank == 0:
@@ -79,15 +81,15 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         av = plt.subplot(3,1,1)
         av.plot(x, picV)
         av.axes.xaxis.set_ticklabels([])
-        av.set_title("(a1)", x=0.05, y=0.8, size=10) # Membrane Potential
+        av.set_title("(b1)", x=1.05, y=0.8, size=10) # Membrane Potential
         av.set_ylabel("Voltage/(mV)")
         av.set_xlim(100,500)
         # 放电率
         af = plt.subplot(3,1,2)
         af.plot(x, picF)
         af.axes.xaxis.set_ticklabels([])
-        af.set_title("(a2)", x=0.05, y=0.8, size=10) # Firing Rate
-        af.set_ylabel("Firing Rate")
+        af.set_title("(b2)", x=1.05, y=0.8, size=10) # Firing Rate
+        af.set_ylabel("Firing Rate/(%)", labelpad=13.5)
         af.set_xlim(100,500)
         # 放电栅格
         ay = plt.subplot(3,1,3)
@@ -95,7 +97,7 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
             y = np.argwhere(picY[i] == 1)
             x = np.ones(len(y)) * i
             ay.scatter(x, y, c='black', s=0.5)
-        ay.set_title("(a3)", x=0.05, y=0.8, size=10) # Firing Grid Map
+        ay.set_title("(b3)", x=1.05, y=0.8, size=10) # Firing Grid Map
         ay.set_ylabel("Neuron No.")
         ay.set_xlim(100,500)
         # 保存图片
