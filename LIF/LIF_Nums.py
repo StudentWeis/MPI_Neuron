@@ -1,3 +1,4 @@
+# LIF 神经元 MPI 仿真
 import os
 from ctypes import c_int
 
@@ -25,7 +26,8 @@ ctl_lib.IjDot.argtypes = [
     c_int, c_int, ctl.ndpointer(dtype=np.single)
 ]
 
-def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
+# 神经元进程
+def processNeuron(niter: int, numNeuron: int, totalNeuron: int):
 
     # 同步，并计算各个进程神经元数量以及分布情况
     count = np.zeros(comm_size, dtype=int)
@@ -35,23 +37,24 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
     display[0] = 0
     display = display.cumsum()
 
-    # 每个 MPI 进程初始化神经元
+    # 所有进程初始化神经元
     VmR = np.ones(numNeuron, dtype=np.single) * (-70)
     Ij = np.ones(numNeuron, dtype=np.single) * (0.25)
+    period = np.zeros(numNeuron, dtype=np.int8) # 灭火期记录
 
     # 交错生成 Weight，缓解内存问题
     MaskOKRecv = False
     MaskOKSend = False
     
+    # 主进程提供辅助信息
     if comm_rank == 0:
-        import os
-
         import psutil
         print(u'当前进程的内存使用：%.4f GB' % (psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024) )
+    # 其他进程依次等待上一进程完毕
     else:
         MaskOKRecv = comm.recv(source=comm_rank-1)
         
-    # 初始化突触，兴奋型连接和抑制型连接
+    # 初始化突触
     WeightMask = np.random.choice([-1, 1, 0], size=(numNeuron, totalNeuron), p=[.2, .2, .6]).astype(np.int8)
     if comm_rank == 0:
         print(u'当前进程的内存使用：%.4f GB' % (psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024) )
@@ -65,24 +68,27 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
     del WeightMask
     if comm_rank == 0:
         print(u'当前进程的内存使用：%.4f GB' % (psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024) )
+    
+    # 初始化完成后依次向后一进程发送完毕指令
     if comm_rank == comm_size-1:
         comm.ssend(MaskOKSend, dest=0)
     else:
         comm.ssend(MaskOKSend, dest=comm_rank+1)
+    # 主进程等待最后一个进程完毕
     if comm_rank == 0:
         MaskOKRecv = comm.recv(source=comm_size-1)
         if(MaskOKRecv):
             print("交错式初始化内存任务完毕")
 
-    # 初始化灭火期记录
-    period = np.zeros(numNeuron, dtype=np.int8)
-
-    # 主进程
+    # 主进程提供辅助信息
     if comm_rank == 0:
-        import time
-
+        # Matplotlib 画图记录变量
         numPlot = 200
-        # 打印发送辅助信息
+        picV = np.ones(numPlot, dtype=np.single)
+        picY = np.zeros((numPlot, totalNeuron), dtype=bool)
+        picF = np.zeros(numPlot, dtype=np.single)
+        
+        # 打印辅助信息
         print("本程序为 LIF 神经元的 MPI 分布式仿真")
         print("Linux MPI 版本为")
         print("交错式内存初始化+同步启动")
@@ -93,14 +99,16 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         print("使用 Matplotlib 绘图")
         print("神经元数量为：", totalNeuron)
         print("集群个数为：", comm_size)
+        print("仿真步长为 1ms")
         print("迭代次数为：", niter)
-        # 绘图数组
-        picV = np.ones(numPlot, dtype=np.single)
-        picY = np.zeros((numPlot, totalNeuron), dtype=bool)
-        picF = np.zeros(numPlot, dtype=np.single)
-        start = time.time()  # 记录仿真时长
+        print("理论时间为：", niter/1000)
+
+        # 记录仿真时长
+        import time
+        start = time.time()
         gathertime = 0
 
+    # 所有进程完成迭代
     for i in range(niter):
         # 每个进程分别迭代计算，然后全收集
         # 初始化放电矩阵
@@ -115,8 +123,12 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         if comm_rank == 0:
             gathertime += time.time() - start2
         # ctl_lib.IjDot(WeightRand, SpikeAll, numNeuron, totalNeuron, Ij)  # 计算突触电流
+<<<<<<< HEAD
+=======
+        Ij = ((np.random.rand(numNeuron, totalNeuron)) * (0.5)).astype(np.single)
+>>>>>>> refs/remotes/github/main
 
-        # 记录单个神经元的膜电位数据
+        # 记录单个神经元的实验数据
         if comm_rank == 0:
             if (i < numPlot):
                 picV[i] = VmR[90]
@@ -141,14 +153,24 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         av = plt.subplot(3,1,1)
         av.plot(x, picV)
         av.axes.xaxis.set_ticklabels([])
+<<<<<<< HEAD
         av.set_title("(b1)", x=1.05, y=0.8, size=10) # Membrane Potential
+=======
+        av.set_title("(a1)", x=1.05, y=0.8, size=10) # Membrane Potential
+>>>>>>> refs/remotes/github/main
         av.set_ylabel("Voltage/mV")
         av.set_xlim(50,150)
         # 放电率
         af = plt.subplot(3,1,2)
         af.plot(x, picF)
+<<<<<<< HEAD
         af.set_title("(b2)", x=1.05, y=0.8, size=10) # Firing Rate
         af.set_ylabel("Firing Rate/(%)", labelpad=12)
+=======
+        af.axes.xaxis.set_ticklabels([])
+        af.set_title("(a2)", x=1.05, y=0.8, size=10) # Firing Rate
+        af.set_ylabel("Firing Rate/%", labelpad=11)
+>>>>>>> refs/remotes/github/main
         af.set_xlim(50,150)
         # 放电栅格
         ay = plt.subplot(3,1,3)
@@ -156,7 +178,11 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
             y = np.argwhere(picY[i] == 1)
             x = np.ones(len(y)) * i
             ay.scatter(x, y, c='black', s=0.5)
+<<<<<<< HEAD
         ay.set_title("(b3)", x=1.05, y=0.8, size=10) # Firing Grid Map
+=======
+        ay.set_title("(a3)", x=1.05, y=0.8, size=10) # Firing Grid Map
+>>>>>>> refs/remotes/github/main
         ay.set_ylabel("Neuron No.")
         ay.set_xlim(50,150)
         # 保存图片
@@ -169,6 +195,10 @@ if __name__ == '__main__':
         numNeurons = 100
     else:
         numNeurons = 100
+<<<<<<< HEAD
+=======
+        
+>>>>>>> refs/remotes/github/main
     totalNeurons = comm.allreduce(numNeurons)
     niters = 1000  # 迭代次数
-    process_Neuron(niters, numNeurons, totalNeurons)
+    processNeuron(niters, numNeurons, totalNeurons)
