@@ -70,15 +70,16 @@ def processNeuron(niter: int, numNeuron: int, totalNeuron: int):
         print(u'当前进程的内存使用：%.4f GB' % (psutil.Process(os.getpid()).memory_info().rss / 1024 / 1024 / 1024) )
     
     # 初始化完成后依次向后一进程发送完毕指令
-    if comm_rank == comm_size-1:
-        comm.ssend(MaskOKSend, dest=0)
-    else:
-        comm.ssend(MaskOKSend, dest=comm_rank+1)
-    # 主进程等待最后一个进程完毕
-    if comm_rank == 0:
-        MaskOKRecv = comm.recv(source=comm_size-1)
-        if(MaskOKRecv):
-            print("交错式初始化内存任务完毕")
+    if comm_size > 1:
+        if comm_rank == comm_size-1:
+            comm.ssend(MaskOKSend, dest=0)
+        else:
+            comm.ssend(MaskOKSend, dest=comm_rank+1)
+        # 主进程等待最后一个进程完毕
+        if comm_rank == 0:
+            MaskOKRecv = comm.recv(source=comm_size-1)
+            if(MaskOKRecv):
+                print("交错式初始化内存任务完毕")
 
     # 主进程提供辅助信息
     if comm_rank == 0:

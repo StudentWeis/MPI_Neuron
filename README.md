@@ -16,17 +16,14 @@ conda activate mpineuron
 ```
 
 # LIF
-export DISPLAY=:0
 gcc -fPIC -shared LIF/LIF.c -o LIF/LIF.so -O3
 mpiexec -n 16 python LIF/LIF_Nums.py
 python LIF/NoMPI-LIF.py 
 
 # HH
-export DISPLAY=:0
 g++ -fPIC -shared HH/HH.cpp -o HH/HH.so -O3
 mpiexec --allow-run-as-root -n 6 python HH/HH.py
 
 # Izhikevich
-export DISPLAY=:0
 gcc -fPIC -shared Izhikevich/Izhikevich.c -o Izhikevich/Izhikevich.so -O3
 mpiexec -n 4 python Izhikevich/Izhikevich.py

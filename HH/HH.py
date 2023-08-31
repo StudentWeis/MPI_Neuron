@@ -116,10 +116,10 @@ def processNeuron(niter: int, numNeuron: int, totalNeuron: int):
 if __name__ == '__main__':
     # 初始化仿真参数
     if comm_rank == 0:
-        numNeurons = 100
+        numNeurons = 250
     else:
-        numNeurons = 100
+        numNeurons = 250
         
     totalNeurons = comm.allreduce(numNeurons)
-    niters = 1000  # 迭代次数
+    niters = 20000  # 迭代次数
     processNeuron(niters, numNeurons, totalNeurons)
