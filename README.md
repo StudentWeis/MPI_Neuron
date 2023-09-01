@@ -17,8 +17,7 @@ conda activate mpineuron
 
 # LIF
 gcc -fPIC -shared LIF/LIF.c -o LIF/LIF.so -O3
-mpiexec -n 16 python LIF/LIF_Nums.py
-python LIF/NoMPI-LIF.py 
+mpiexec -n 16 python LIF/LIF.py
 
 # HH
 g++ -fPIC -shared HH/HH.cpp -o HH/HH.so -O3

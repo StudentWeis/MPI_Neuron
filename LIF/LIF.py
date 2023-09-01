@@ -14,7 +14,7 @@ comm_size = comm.Get_size()
 # 初始化 C 动态库函数
 current_path = os.path.abspath(__file__)
 father_path = os.path.abspath(os.path.dirname(current_path) + os.path.sep + ".")
-ctl_lib = ctl.load_library("LIF_Nums.so", "./LIF")
+ctl_lib = ctl.load_library("LIF.so", father_path)
 ctl_lib.lifPI.restypes = None
 ctl_lib.lifPI.argtypes = [
     ctl.ndpointer(dtype=np.single), ctl.ndpointer(dtype='b'), c_int,
@@ -115,7 +115,6 @@ def processNeuron(niter: int, numNeuron: int, totalNeuron: int):
         # 初始化放电矩阵
         Spike = np.zeros(numNeuron, dtype='b')
         SpikeAll = np.zeros(totalNeuron, dtype='b')
-        Ij = ((np.random.rand(numNeuron, totalNeuron)) * (0.25)).astype(np.single)
         ctl_lib.lifPI(VmR, Spike, numNeuron, Ij, period)  # 大规模神经元电位计算
         if comm_rank == 0:
             start2 = time.time()  # 收集仿真时长
@@ -123,15 +122,15 @@ def processNeuron(niter: int, numNeuron: int, totalNeuron: int):
         comm.Allgather(Spike, SpikeAll)
         if comm_rank == 0:
             gathertime += time.time() - start2
-        # ctl_lib.IjDot(WeightRand, SpikeAll, numNeuron, totalNeuron, Ij)  # 计算突触电流
-        Ij = ((np.random.rand(numNeuron, totalNeuron)) * (0.5)).astype(np.single)
+        ctl_lib.IjDot(WeightRand, SpikeAll, numNeuron, totalNeuron, Ij)  # 计算突触电流
+        # Ij = ((np.random.rand(numNeuron, totalNeuron)) * (0.5)).astype(np.single)
 
         # 记录单个神经元的实验数据
-        if comm_rank == 0:
-            if (i < numPlot):
-                picV[i] = VmR[90]
-                picY[i] = SpikeAll
-                picF[i] = sum(SpikeAll)/totalNeuron*100
+        # if comm_rank == 0:
+        #     if (i < numPlot):
+        #         picV[i] = VmR[90]
+        #         picY[i] = SpikeAll
+        #         picF[i] = sum(SpikeAll)/totalNeuron*100
 
     # 主进程发送辅助信息
     if comm_rank == 0:
