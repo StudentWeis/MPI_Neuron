@@ -52,17 +52,17 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         start = time.time()  # 记录仿真时长
 
     for i in range(niter):
-        Ij = ((np.random.rand(numNeuron, totalNeuron)) * (5)).astype(np.single)
+        # Ij = ((np.random.rand(numNeuron, totalNeuron)) * (5)).astype(np.single)
         Spike = np.zeros(numNeuron, dtype='b')
         SpikeAll = np.zeros(totalNeuron, dtype='b')
         ctl_lib.rungeKutta(Vm, u, Ij, Spike, a, b, c, d, numNeuron)
         comm.Allgather(Spike, SpikeAll)
-        # 记录单个神经元的膜电位数据
-        if comm_rank == 0:
-            if (i < numPlot):
-                picV[i] = Vm[5]
-                picY[i] = SpikeAll
-                picF[i] = sum(SpikeAll)/totalNeuron*100
+        # # 记录单个神经元的膜电位数据
+        # if comm_rank == 0:
+        #     if (i < numPlot):
+        #         picV[i] = Vm[5]
+        #         picY[i] = SpikeAll
+        #         picF[i] = sum(SpikeAll)/totalNeuron*100
     
         # 主进程发送辅助信息
     if comm_rank == 0:
@@ -105,11 +105,11 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
 
 if __name__ == '__main__':
     # 初始化仿真参数
-    if comm_rank == 0:
-        numNeurons = 100
-    else:
-        numNeurons = 100
-        
+    # if comm_rank == 0:
+    #     numNeurons = 625
+    # else:
+    #     numNeurons = 625
+    numNeurons = 3000  
     totalNeurons = comm.allreduce(numNeurons)
     niters = 1000  # 迭代次数
     process_Neuron(niters, numNeurons, totalNeurons)

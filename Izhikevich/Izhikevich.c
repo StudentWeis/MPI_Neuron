@@ -1,3 +1,4 @@
+// dt = 0.1 ms
 void izhikevich(float Vmi, float ui, float Iji, float a, float b, float *vt, float *ut)
 {
     vt[0] = 0.04 * Vmi * Vmi + 5 * Vmi + 140 - ui + Iji;

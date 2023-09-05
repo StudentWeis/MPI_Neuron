@@ -66,11 +66,11 @@ def processNeuron(niter: int, numNeuron: int, totalNeuron: int):
         comm.Allgather(Spike, SpikeAll)
 
         # 记录单个神经元的实验数据
-        if comm_rank == 0:
-            if (i < numPlot):
-                picV[i] = Vm[5]
-                picY[i] = SpikeAll
-                picF[i] = sum(SpikeAll)/totalNeuron*100
+        # if comm_rank == 0:
+        #     if (i < numPlot):
+        #         picV[i] = Vm[5]
+        #         picY[i] = SpikeAll
+        #         picF[i] = sum(SpikeAll)/totalNeuron*100
 
     # 主进程提供辅助信息
     if comm_rank == 0:
@@ -115,11 +115,11 @@ def processNeuron(niter: int, numNeuron: int, totalNeuron: int):
  # 主程序
 if __name__ == '__main__':
     # 初始化仿真参数
-    if comm_rank == 0:
-        numNeurons = 250
-    else:
-        numNeurons = 250
-        
+    # if comm_rank == 0:
+    #     numNeurons = 5000
+    # else:
+    #     numNeurons = 5000
+    numNeurons = 2500 
     totalNeurons = comm.allreduce(numNeurons)
-    niters = 20000  # 迭代次数
+    niters = 1000  # 迭代次数
     processNeuron(niters, numNeurons, totalNeurons)
