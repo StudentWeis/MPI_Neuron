@@ -23,8 +23,10 @@ ctl_lib.SW.argtypes = [
 ]
 ctl_lib.IjDot.restypes = None
 ctl_lib.IjDot.argtypes = [
-    ctl.ndpointer(dtype=np.single), ctl.ndpointer(dtype='b'),
-    c_int, c_int, ctl.ndpointer(dtype=np.single)
+    ctl.ndpointer(dtype=np.single), 
+    ctl.ndpointer(dtype='b'),
+    ctl.ndpointer(dtype='b'), c_int, c_int,
+    ctl.ndpointer(dtype=np.single)
 ]
 
 def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
@@ -40,10 +42,8 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
     u = np.ones(numNeuron, dtype=np.single) * (-0)
     Ij = ((np.random.rand(numNeuron, totalNeuron)) * (5)).astype(np.single)
 
-    # 抑制型
-    # a = 0.02; b = 0.2; c = -65.0; d = 6  
-    # 兴奋型
-    a = 0.2; b = 0.26; c = -65.0; d = 0
+    # 神经元分类
+    ClassNeuron = np.random.choice([0, 1], size=(numNeuron), p=[.2, .8]).astype(bool)
     
 
     # 主进程
@@ -70,7 +70,7 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
     for i in range(niter):
         Spike = np.zeros(numNeuron, dtype='b')
         SpikeAll = np.zeros(totalNeuron, dtype='b')
-        ctl_lib.IzhikevichRK(Vm, u, Ij, Spike, a, b, c, d, numNeuron)
+        ctl_lib.SW(Vm, u, Ij, Spike, ClassNeuron, numNeuron)
         comm.Allgather(Spike, SpikeAll)
         ctl_lib.IjDot(WeightRand, SpikeAll, numNeuron, totalNeuron, Ij)  # 计算突触电流
 
