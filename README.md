@@ -13,6 +13,7 @@ pip install numpy matplotlib psutil mpi4py
 ```sh
 cd ~/MPI_Neuron
 conda activate mpineuron
+export HWLOC_COMPONENTS="-gl"
 ```
 
 # LIF

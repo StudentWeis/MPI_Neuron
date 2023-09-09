@@ -14,23 +14,38 @@ singlecomm_size = comm.Get_size()
 current_path = os.path.abspath(__file__)
 father_path = os.path.abspath(os.path.dirname(current_path) + os.path.sep + ".")
 ctl_lib = ctl.load_library("Izhikevich.so", father_path)
-ctl_lib.rungeKutta.restypes = None
-ctl_lib.rungeKutta.argtypes = [
+ctl_lib.IzhikevichRK.restypes = None
+ctl_lib.IzhikevichRK.argtypes = [
     ctl.ndpointer(dtype=np.single), 
     ctl.ndpointer(dtype=np.single),
     ctl.ndpointer(dtype=np.single),
     ctl.ndpointer(dtype='b'), c_float,
     c_float, c_float, c_float, c_int
 ]
+ctl_lib.IjDot.restypes = None
+ctl_lib.IjDot.argtypes = [
+    ctl.ndpointer(dtype=np.single), ctl.ndpointer(dtype='b'),
+    c_int, c_int, ctl.ndpointer(dtype=np.single)
+]
 
 def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
+
+    # 初始化突触
+    WeightMask = np.random.choice([-1, 1, 0], size=(numNeuron, totalNeuron), p=[.2, .2, .6]).astype(np.int8)
+    WeightRand = ((np.random.rand(numNeuron, totalNeuron)) * (1)).astype(np.single)
+    WeightRand = np.multiply(WeightMask, WeightRand).astype(np.single)
+    del WeightMask # 释放内存占用
+
+    # 初始化神经元
+    Vm = np.ones(numNeuron, dtype=np.single) * (-55)
+    u = np.ones(numNeuron, dtype=np.single) * (-0)
+    Ij = ((np.random.rand(numNeuron, totalNeuron)) * (5)).astype(np.single)
+
     # 抑制型
     # a = 0.02; b = 0.2; c = -65.0; d = 6  
     # 兴奋型
     a = 0.2; b = 0.26; c = -65.0; d = 0
-    Vm = np.ones(numNeuron, dtype=np.single) * (-55)
-    u = np.ones(numNeuron, dtype=np.single) * (-0)
-    Ij = ((np.random.rand(numNeuron, totalNeuron)) * (5)).astype(np.single)
+    
 
     # 主进程
     if comm_rank == 0:
@@ -47,24 +62,27 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         print("Linux MPI 版本为")
         print("使用 C 动态库进行加速计算")
         print("使用 Matplotlib 绘图")
-        print("神经元数量为：", numNeuron)
+        print("神经元数量为：", totalNeuron)
         print("迭代次数为：", niter)
-        start = time.time()  # 记录仿真时长
+
+        # 记录仿真时长
+        start = time.time()  
 
     for i in range(niter):
-        # Ij = ((np.random.rand(numNeuron, totalNeuron)) * (5)).astype(np.single)
         Spike = np.zeros(numNeuron, dtype='b')
         SpikeAll = np.zeros(totalNeuron, dtype='b')
-        ctl_lib.rungeKutta(Vm, u, Ij, Spike, a, b, c, d, numNeuron)
+        ctl_lib.IzhikevichRK(Vm, u, Ij, Spike, a, b, c, d, numNeuron)
         comm.Allgather(Spike, SpikeAll)
-        # # 记录单个神经元的膜电位数据
-        # if comm_rank == 0:
-        #     if (i < numPlot):
-        #         picV[i] = Vm[5]
-        #         picY[i] = SpikeAll
-        #         picF[i] = sum(SpikeAll)/totalNeuron*100
+        ctl_lib.IjDot(WeightRand, SpikeAll, numNeuron, totalNeuron, Ij)  # 计算突触电流
+
+        # 记录单个神经元的膜电位数据
+        if comm_rank == 0:
+            if (i < numPlot):
+                picV[i] = Vm[5]
+                picY[i] = SpikeAll
+                picF[i] = sum(SpikeAll)/totalNeuron*100
     
-        # 主进程发送辅助信息
+    # 主进程发送辅助信息
     if comm_rank == 0:
         print("运行时间为:", time.time() - start)
 
@@ -105,11 +123,10 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
 
 if __name__ == '__main__':
     # 初始化仿真参数
-    # if comm_rank == 0:
-    #     numNeurons = 625
-    # else:
-    #     numNeurons = 625
-    numNeurons = 3000  
+    if comm_rank == 0:
+        numNeurons = 625
+    else:
+        numNeurons = 625
     totalNeurons = comm.allreduce(numNeurons)
     niters = 1000  # 迭代次数
     process_Neuron(niters, numNeurons, totalNeurons)
