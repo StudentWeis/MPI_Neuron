@@ -1,5 +1,5 @@
 import os
-from ctypes import c_float, c_int
+from ctypes import c_int
 
 import numpy as np
 import numpy.ctypeslib as ctl
@@ -16,22 +16,24 @@ father_path = os.path.abspath(os.path.dirname(current_path) + os.path.sep + ".")
 ctl_lib = ctl.load_library("SW.so", father_path)
 ctl_lib.SW.restypes = None
 ctl_lib.SW.argtypes = [
-    ctl.ndpointer(dtype=np.single), 
     ctl.ndpointer(dtype=np.single),
     ctl.ndpointer(dtype=np.single),
-    ctl.ndpointer(dtype='b'), c_int
+    ctl.ndpointer(dtype=np.single),
+    ctl.ndpointer(dtype='b'), 
+    ctl.ndpointer(dtype=c_int), c_int
 ]
 ctl_lib.IjDot.restypes = None
 ctl_lib.IjDot.argtypes = [
-    ctl.ndpointer(dtype=np.single), 
-    ctl.ndpointer(dtype='b'),
+    ctl.ndpointer(dtype=np.single),
     ctl.ndpointer(dtype='b'), c_int, c_int,
     ctl.ndpointer(dtype=np.single)
 ]
 
+# 神经元进程
 def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
 
     # 初始化突触
+    # Todo：WS 小世界连接
     WeightMask = np.random.choice([-1, 1, 0], size=(numNeuron, totalNeuron), p=[.2, .2, .6]).astype(np.int8)
     WeightRand = ((np.random.rand(numNeuron, totalNeuron)) * (1)).astype(np.single)
     WeightRand = np.multiply(WeightMask, WeightRand).astype(np.single)
@@ -41,10 +43,11 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
     Vm = np.ones(numNeuron, dtype=np.single) * (-55)
     u = np.ones(numNeuron, dtype=np.single) * (-0)
     Ij = ((np.random.rand(numNeuron, totalNeuron)) * (5)).astype(np.single)
+    Spike = np.zeros(numNeuron, dtype='b')
+    SpikeAll = np.zeros(totalNeuron, dtype='b')
 
     # 神经元分类
-    ClassNeuron = np.random.choice([0, 1], size=(numNeuron), p=[.2, .8]).astype(bool)
-    
+    ClassNeuron = np.random.choice([2, 1], size=(numNeuron), p=[1, 0]).astype(c_int)
 
     # 主进程
     if comm_rank == 0:
@@ -57,8 +60,9 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         picF = np.zeros(numPlot, dtype=np.single)
         
         # 打印发送辅助信息
-        print("本程序为 Izhikevich 神经元的 MPI 分布式仿真")
-        print("Linux MPI 版本为")
+        print("本程序为 WS 小世界 Izhikevich 神经元模型的 MPI 分布式仿真")
+        print("Linux MPI 版本为：")
+        os.system("mpirun --version | sed -n '1p'")
         print("使用 C 动态库进行加速计算")
         print("使用 Matplotlib 绘图")
         print("神经元数量为：", totalNeuron)
@@ -67,12 +71,14 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         # 记录仿真时长
         start = time.time()  
 
+    # 神经元迭代
     for i in range(niter):
-        Spike = np.zeros(numNeuron, dtype='b')
-        SpikeAll = np.zeros(totalNeuron, dtype='b')
+        # 计算神经元电位
         ctl_lib.SW(Vm, u, Ij, Spike, ClassNeuron, numNeuron)
+        # 收集放电情况
         comm.Allgather(Spike, SpikeAll)
-        ctl_lib.IjDot(WeightRand, SpikeAll, numNeuron, totalNeuron, Ij)  # 计算突触电流
+        # 计算突触电流
+        ctl_lib.IjDot(WeightRand, SpikeAll, numNeuron, totalNeuron, Ij)
 
         # 记录单个神经元的膜电位数据
         if comm_rank == 0:
@@ -88,10 +94,11 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         # 绘制单个神经元实验结果验证仿真正确性
         import matplotlib
         import matplotlib.pyplot as plt
+        
         matplotlib.use('Agg')
         plt.style.use('bmh')
 
-        # Izhikevich Simulation results
+        # SW Izhikevich Simulation results
         fig = plt.figure(dpi=300)
         x = np.linspace(0, numPlot, numPlot)
         # 膜电位
@@ -118,14 +125,14 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         ay.set_ylabel("Neuron No.")
         ay.set_xlim(100,500)
         # 保存图片
-        fig.savefig(os.path.join(father_path, "Izhikevich.png"))
+        fig.savefig(os.path.join(father_path, "SW.png"))
 
 if __name__ == '__main__':
     # 初始化仿真参数
     if comm_rank == 0:
-        numNeurons = 625
+        numNeurons = 100
     else:
-        numNeurons = 625
+        numNeurons = 100
     totalNeurons = comm.allreduce(numNeurons)
     niters = 1000  # 迭代次数
     process_Neuron(niters, numNeurons, totalNeurons)
