@@ -22,6 +22,7 @@ y3=[0.14, 0.3, 0.7, 0.9]
 # STM32
 x4=[4000, 8000, 10000, 12000, 16000]
 y4=[0.5, 0.76, 1.0, 1.22, 1.76]
+
 lif.plot(x1,y1, marker='o',markersize=2,linewidth=1.5,label='4-16')
 lif.plot(x2,y2, marker='o',markersize=2,linewidth=1.5,label='1-4')
 lif.plot(x3,y3, marker='o',markersize=2,linewidth=1.5,label='1-1')
