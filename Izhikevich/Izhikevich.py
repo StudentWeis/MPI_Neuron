@@ -42,9 +42,9 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
     Ij = ((np.random.rand(numNeuron, totalNeuron)) * (5)).astype(np.single)
 
     # 抑制型
-    # a = 0.02; b = 0.2; c = -65.0; d = 6  
+    a = 0.02; b = 0.2; c = -65.0; d = -8
     # 兴奋型
-    a = 0.2; b = 0.26; c = -65.0; d = 0
+    # a = 0.2; b = 0.26; c = -65.0; d = 0
     
 
     # 主进程

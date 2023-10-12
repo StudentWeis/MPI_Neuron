@@ -27,7 +27,7 @@ extern "C" void SW(float *Vm, float *u, float *Ij, char *Spike, int *Class,
       a = 0.02;
       b = 0.2;
       c = -65.0;
-      d = 8;
+      d = -8;
       break;
     case 2: // 抑制型
       a = 0.02;

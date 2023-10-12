@@ -46,8 +46,8 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
     Spike = np.zeros(numNeuron, dtype='b')
     SpikeAll = np.zeros(totalNeuron, dtype='b')
 
-    # 神经元分类
-    ClassNeuron = np.random.choice([2, 1], size=(numNeuron), p=[1, 0]).astype(c_int)
+    # 神经元分类 E | I
+    ClassNeuron = np.random.choice([2, 1], size=(numNeuron), p=[.8, .2]).astype(c_int)
 
     # 主进程
     if comm_rank == 0:
@@ -55,9 +55,9 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
 
         # 绘图数组
         numPlot = 500
-        picV = np.ones(numPlot, dtype=np.single)
+        picVe = np.ones(numPlot, dtype=np.single)
+        picVi = np.ones(numPlot, dtype=np.single)
         picY = np.zeros((numPlot, totalNeuron), dtype=bool)
-        picF = np.zeros(numPlot, dtype=np.single)
         
         # 打印发送辅助信息
         print("本程序为 WS 小世界 Izhikevich 神经元模型的 MPI 分布式仿真")
@@ -83,9 +83,9 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         # 记录单个神经元的膜电位数据
         if comm_rank == 0:
             if (i < numPlot):
-                picV[i] = Vm[5]
+                picVe[i] = Vm[5]
+                picVi[i] = Vm[6]
                 picY[i] = SpikeAll
-                picF[i] = sum(SpikeAll)/totalNeuron*100
     
     # 主进程发送辅助信息
     if comm_rank == 0:
@@ -102,37 +102,37 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         fig = plt.figure(dpi=300)
         x = np.linspace(0, numPlot, numPlot)
         # 膜电位
-        av = plt.subplot(3,1,1)
-        av.plot(x, picV)
-        av.axes.xaxis.set_ticklabels([])
-        av.set_title("(b1)", x=1.05, y=0.8, size=10) # Membrane Potential
-        av.set_ylabel("Voltage/(mV)")
-        av.set_xlim(100,500)
-        # 放电率
-        af = plt.subplot(3,1,2)
-        af.plot(x, picF)
-        af.axes.xaxis.set_ticklabels([])
-        af.set_title("(b2)", x=1.05, y=0.8, size=10) # Firing Rate
-        af.set_ylabel("Firing Rate/(%)", labelpad=13.5)
-        af.set_xlim(100,500)
+        ave = plt.subplot(2,2,1)
+        ave.plot(x, picVe)
+        ave.axes.xaxis.set_ticklabels([])
+        ave.set_title("(b1)", x=1.05, y=0.8, size=10) # Membrane Potential
+        ave.set_ylabel("Voltage/(mV)")
+        ave.set_xlim(200,500)
+        avi = plt.subplot(2,2,2)
+        avi.plot(x, picVi)
+        avi.axes.xaxis.set_ticklabels([])
+        avi.set_title("(b1)", x=1.05, y=0.8, size=10) # Membrane Potential
+        avi.set_ylabel("Voltage/(mV)")
+        avi.set_xlim(200,500)
         # 放电栅格
-        ay = plt.subplot(3,1,3)
+        ay = plt.subplot(2,2,3)
         for i in range(numPlot):
             y = np.argwhere(picY[i] == 1)
             x = np.ones(len(y)) * i
             ay.scatter(x, y, c='black', s=0.5)
         ay.set_title("(b3)", x=1.05, y=0.8, size=10) # Firing Grid Map
         ay.set_ylabel("Neuron No.")
-        ay.set_xlim(100,500)
+        ay.set_xlim(200,500)
         # 保存图片
+        fig.tight_layout()
         fig.savefig(os.path.join(father_path, "SW.png"))
 
 if __name__ == '__main__':
     # 初始化仿真参数
     if comm_rank == 0:
-        numNeurons = 100
+        numNeurons = 125
     else:
-        numNeurons = 100
+        numNeurons = 125
     totalNeurons = comm.allreduce(numNeurons)
     niters = 1000  # 迭代次数
     process_Neuron(niters, numNeurons, totalNeurons)
