@@ -37,7 +37,8 @@ def processNeuron(niter: int, numNeuron: int, totalNeuron: int):
     # 主进程提供辅助信息
     if comm_rank == 0:
         # Matplotlib 画图记录变量
-        numPlot = 1000
+        numPlot = 200
+        startPlot = 400
         picV = np.ones(numPlot, dtype=np.single)
         picY = np.zeros((numPlot, totalNeuron), dtype=bool)
         picF = np.zeros(numPlot, dtype=np.single)
@@ -66,15 +67,18 @@ def processNeuron(niter: int, numNeuron: int, totalNeuron: int):
         comm.Allgather(Spike, SpikeAll)
 
         # 记录单个神经元的实验数据
-        # if comm_rank == 0:
-        #     if (i < numPlot):
-        #         picV[i] = Vm[5]
-        #         picY[i] = SpikeAll
-        #         picF[i] = sum(SpikeAll)/totalNeuron*100
+        if comm_rank == 0:
+            if ((startPlot <= i) & (i < startPlot + numPlot)):
+                picV[i-startPlot] = Vm[5]
+                picY[i-startPlot] = SpikeAll
+                picF[i-startPlot] = sum(SpikeAll)/totalNeuron*100
 
     # 主进程提供辅助信息
     if comm_rank == 0:
         print("运行时间为：", time.time() - start)
+
+        np.save('hhV', picV)
+        np.save('hhS', picY)
 
         # 绘制单个神经元实验结果验证仿真正确性
         import matplotlib
@@ -83,7 +87,7 @@ def processNeuron(niter: int, numNeuron: int, totalNeuron: int):
         plt.style.use('bmh')
 
         # HH Simulation results
-        fig = plt.figure(dpi=300)
+        fig = plt.figure(dpi=300, figsize=(1.5,4.5))
         x = np.linspace(0, numPlot, numPlot)
         # 膜电位
         av = plt.subplot(3,1,1)
@@ -91,23 +95,23 @@ def processNeuron(niter: int, numNeuron: int, totalNeuron: int):
         av.axes.xaxis.set_ticklabels([])
         av.set_title("(c1)", x=1.05, y=0.8, size=10) # Membrane Potential
         av.set_ylabel("Voltage/(mV)")
-        av.set_xlim(100,numPlot)
+        # av.set_xlim(100,numPlot)
         # 放电率
         af = plt.subplot(3,1,2)
         af.plot(x, picF)
         af.axes.xaxis.set_ticklabels([])
         af.set_title("(c2)", x=1.05, y=0.8, size=10) # Firing Rate
         af.set_ylabel("Firing Rate/(%)", labelpad=13.5)
-        af.set_xlim(100,numPlot)
+        # af.set_xlim(100,numPlot)
         # 放电栅格
         ay = plt.subplot(3,1,3)
         for i in range(numPlot):
             y = np.argwhere(picY[i] == 1)
             x = np.ones(len(y)) * i
-            ay.scatter(x, y, c='black', s=0.5)
+            ay.scatter(x, y, c='black', s=0.005)
         ay.set_title("(c3)", x=1.05, y=0.8, size=10) # Firing Grid Map
         ay.set_ylabel("Neuron No.")
-        ay.set_xlim(100,numPlot)
+        # ay.set_xlim(100,numPlot)
         # 保存图片
         fig.savefig(os.path.join(father_path, "HH.png"))
 

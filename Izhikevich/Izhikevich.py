@@ -42,9 +42,9 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
     Ij = ((np.random.rand(numNeuron, totalNeuron)) * (5)).astype(np.single)
 
     # 抑制型
-    a = 0.02; b = 0.2; c = -65.0; d = -8
+    # a = 0.02; b = 0.2; c = -65.0; d = -8
     # 兴奋型
-    # a = 0.2; b = 0.26; c = -65.0; d = 0
+    a = 0.2; b = 0.26; c = -65.0; d = 0
     
 
     # 主进程
@@ -52,7 +52,8 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         import time
 
         # 绘图数组
-        numPlot = 500
+        numPlot = 150
+        startPlot = 200
         picV = np.ones(numPlot, dtype=np.single)
         picY = np.zeros((numPlot, totalNeuron), dtype=bool)
         picF = np.zeros(numPlot, dtype=np.single)
@@ -77,14 +78,17 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
 
         # 记录单个神经元的膜电位数据
         if comm_rank == 0:
-            if (i < numPlot):
-                picV[i] = Vm[5]
-                picY[i] = SpikeAll
-                picF[i] = sum(SpikeAll)/totalNeuron*100
+            if ((i >= startPlot) & (i < startPlot + numPlot)):
+                picV[i - startPlot] = Vm[5]
+                picY[i - startPlot] = SpikeAll
+                picF[i - startPlot] = sum(SpikeAll)/totalNeuron*100
     
     # 主进程发送辅助信息
     if comm_rank == 0:
         print("运行时间为:", time.time() - start)
+
+        np.save('izhikevichV', picV)
+        np.save('izhikevichS', picY)
 
         # 绘制单个神经元实验结果验证仿真正确性
         import matplotlib
@@ -93,7 +97,7 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         plt.style.use('bmh')
 
         # Izhikevich Simulation results
-        fig = plt.figure(dpi=300)
+        fig = plt.figure(dpi=300, figsize=(1.5,4.5))
         x = np.linspace(0, numPlot, numPlot)
         # 膜电位
         av = plt.subplot(3,1,1)
@@ -101,32 +105,32 @@ def process_Neuron(niter: int, numNeuron: int, totalNeuron: int):
         av.axes.xaxis.set_ticklabels([])
         av.set_title("(b1)", x=1.05, y=0.8, size=10) # Membrane Potential
         av.set_ylabel("Voltage/(mV)")
-        av.set_xlim(100,500)
+        # av.set_xlim(200,300)
         # 放电率
         af = plt.subplot(3,1,2)
         af.plot(x, picF)
         af.axes.xaxis.set_ticklabels([])
         af.set_title("(b2)", x=1.05, y=0.8, size=10) # Firing Rate
         af.set_ylabel("Firing Rate/(%)", labelpad=13.5)
-        af.set_xlim(100,500)
+        # af.set_xlim(200,300)
         # 放电栅格
         ay = plt.subplot(3,1,3)
         for i in range(numPlot):
             y = np.argwhere(picY[i] == 1)
             x = np.ones(len(y)) * i
-            ay.scatter(x, y, c='black', s=0.5)
+            ay.scatter(x, y, c='black', s=0.005)
         ay.set_title("(b3)", x=1.05, y=0.8, size=10) # Firing Grid Map
         ay.set_ylabel("Neuron No.")
-        ay.set_xlim(100,500)
+        # ay.set_xlim(200,300)
         # 保存图片
         fig.savefig(os.path.join(father_path, "Izhikevich.png"))
 
 if __name__ == '__main__':
     # 初始化仿真参数
     if comm_rank == 0:
-        numNeurons = 625
+        numNeurons = 2500
     else:
-        numNeurons = 625
+        numNeurons = 2500
     totalNeurons = comm.allreduce(numNeurons)
     niters = 1000  # 迭代次数
     process_Neuron(niters, numNeurons, totalNeurons)

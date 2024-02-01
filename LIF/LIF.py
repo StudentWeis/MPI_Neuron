@@ -84,7 +84,8 @@ def processNeuron(niter: int, numNeuron: int, totalNeuron: int):
     # 主进程提供辅助信息
     if comm_rank == 0:
         # Matplotlib 画图记录变量
-        numPlot = 200
+        numPlot = 100
+        startPlot = 100
         picV = np.ones(numPlot, dtype=np.single)
         picY = np.zeros((numPlot, totalNeuron), dtype=bool)
         picF = np.zeros(numPlot, dtype=np.single)
@@ -126,16 +127,20 @@ def processNeuron(niter: int, numNeuron: int, totalNeuron: int):
         # Ij = ((np.random.rand(numNeuron, totalNeuron)) * (0.5)).astype(np.single)
 
         # 记录单个神经元的实验数据
-        # if comm_rank == 0:
-        #     if (i < numPlot):
-        #         picV[i] = VmR[90]
-        #         picY[i] = SpikeAll
-        #         picF[i] = sum(SpikeAll)/totalNeuron*100
+        if comm_rank == 0:
+            if ((startPlot <+ i) & (i < startPlot + numPlot)):
+                picV[i - startPlot] = VmR[90]
+                picY[i - startPlot] = SpikeAll
+                picF[i - startPlot] = sum(SpikeAll)/totalNeuron*100
 
     # 主进程发送辅助信息
     if comm_rank == 0:
+
         print("运行时间为:", time.time() - start)
         print("收集时间为:", gathertime)
+
+        np.save('lifV', picV)
+        np.save('lifS', picY)
 
         # 绘制单个神经元实验结果验证仿真正确性
         import matplotlib
@@ -144,7 +149,7 @@ def processNeuron(niter: int, numNeuron: int, totalNeuron: int):
         plt.style.use('bmh')
 
         # LIF Simulation results
-        fig = plt.figure(dpi=300)
+        fig = plt.figure(dpi=500, figsize=(1.5,4.5))
         x = np.linspace(0, numPlot, numPlot)
         # 膜电位
         av = plt.subplot(3,1,1)
@@ -152,23 +157,23 @@ def processNeuron(niter: int, numNeuron: int, totalNeuron: int):
         av.axes.xaxis.set_ticklabels([])
         av.set_title("(a1)", x=1.05, y=0.8, size=10) # Membrane Potential
         av.set_ylabel("Voltage/mV")
-        av.set_xlim(50,150)
+        # av.set_xlim(50,150)
         # 放电率
         af = plt.subplot(3,1,2)
         af.plot(x, picF)
         af.axes.xaxis.set_ticklabels([])
         af.set_title("(a2)", x=1.05, y=0.8, size=10) # Firing Rate
         af.set_ylabel("Firing Rate/(%)", labelpad=11)
-        af.set_xlim(50,150)
+        # af.set_xlim(50,150)
         # 放电栅格
         ay = plt.subplot(3,1,3)
         for i in range(numPlot):
             y = np.argwhere(picY[i] == 1)
             x = np.ones(len(y)) * i
-            ay.scatter(x, y, c='black', s=0.5)
+            ay.scatter(x, y, c='black', s=0.004)
         ay.set_title("(a3)", x=1.05, y=0.8, size=10) # Firing Grid Map
         ay.set_ylabel("Neuron No.")
-        ay.set_xlim(50,150)
+        # ay.set_xlim(50,150)
         # 保存图片
         fig.savefig(os.path.join(father_path, "LIF.png"))
 
@@ -176,9 +181,9 @@ def processNeuron(niter: int, numNeuron: int, totalNeuron: int):
 if __name__ == '__main__':
     # 初始化仿真参数
     if comm_rank == 0:
-        numNeurons = 100
+        numNeurons = 2500
     else:
-        numNeurons = 100
+        numNeurons = 2500
         
     totalNeurons = comm.allreduce(numNeurons)
     niters = 1000  # 迭代次数
